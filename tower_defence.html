@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfectionist Queen - Tower Defense</title>
+
+    <style>
+        /* Load the local pixel font */
+        @font-face {
+            font-family: 'Press Start 2P';
+            src: url('../../Fonts/Cool_Game_Font/PressStart2P-Regular.ttf') format('truetype');
+        }
+
+        body {
+            background-color: black;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            color: white;
+            font-family: 'Press Start 2P', cursive, sans-serif;
+            user-select: none;
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background-color: black;
+        }
+
+        /* --- HUD (Heads Up Display) --- */
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 30;
+        }
+
+        .status-box {
+            background-color: rgba(0, 0, 0, 0.8);
+            border: 4px solid white;
+            padding: 15px;
+            width: 300px;
+        }
+
+        .status-title {
+            font-size: 12px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .bar-container {
+            width: 100%;
+            height: 20px;
+            background-color: #333;
+            border: 2px solid white;
+            position: relative;
+        }
+
+        #gate-health-fill {
+            height: 100%;
+            width: 100%;
+            background-color: #00FF00;
+            transition: width 0.3s, background-color 0.3s;
+        }
+
+        #queen-anger-fill {
+            height: 100%;
+            width: 0%;
+            background-color: #FFD700;
+            transition: width 0.3s, background-color 0.3s;
+        }
+
+        /* --- Scene Management --- */
+        .scene {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: none;
+        }
+
+        .scene.active {
+            display: block;
+        }
+
+        /* --- SCENE 1: Characters --- */
+        .character {
+            width: 160px;
+            height: 160px;
+            position: absolute;
+            bottom: 20vh;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center bottom;
+        }
+
+        #queen {
+            left: 20vw;
+            background-image: url('queen_image.png');
+        }
+
+        #minister {
+            right: 20vw;
+            background-image: url('minister_image.png');
+            transform: scaleX(-1);
+        }
+
+        /* --- SCENE 2: The Gates --- */
+        #scene-gate {
+            background: linear-gradient(to bottom, #0a0a0a, #000000);
+        }
+
+        #gate-structure {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 15vw;
+            height: 70vh;
+            background-color: #1a1a1a;
+            border-right: 10px solid #333;
+            z-index: 2;
+        }
+
+        #gate-door {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 40px;
+            height: 250px;
+            background-color: #2b1d0f;
+            border-top-left-radius: 20px;
+            border: 4px solid #111;
+        }
+
+        #enemy-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .enemy {
+            position: absolute;
+            background-color: #8b0000;
+            box-shadow: 2px 2px 0 #ff4444;
+        }
+
+        /* --- UI: Dialogue Box --- */
+        #dialogue-container {
+            position: absolute;
+            bottom: 3vh;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80vw;
+            max-width: 1000px;
+            height: 150px;
+            background-color: rgba(0, 0, 0, 0.9);
+            border: 4px solid white;
+            padding: 20px;
+            box-sizing: border-box;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            z-index: 20;
+        }
+
+        #speaker-name {
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        #dialogue-text {
+            font-size: 14px;
+            line-height: 1.8;
+            flex-grow: 1;
+        }
+
+        #continue-indicator {
+            align-self: flex-end;
+            font-size: 12px;
+            animation: blink 1s infinite;
+        }
+
+        /* --- UI: Question Prompt --- */
+        #question-ui {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.95);
+            border: 4px solid #FFD700;
+            padding: 30px;
+            width: 70vw;
+            max-width: 800px;
+            z-index: 40;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        #question-text {
+            font-size: 16px;
+            line-height: 2;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .option-btn {
+            background-color: black;
+            color: white;
+            border: 4px solid white;
+            padding: 15px;
+            margin: 10px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            cursor: pointer;
+            width: 80%;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover {
+            background-color: white;
+            color: black;
+        }
+
+        /* --- Animations --- */
+        @keyframes blink {
+
+            0%,
+            49% {
+                opacity: 1;
+            }
+
+            50%,
+            100% {
+                opacity: 0;
+            }
+        }
+
+        @keyframes screenShake {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            20% {
+                transform: translate(-15px, 15px);
+            }
+
+            40% {
+                transform: translate(15px, -15px);
+            }
+
+            60% {
+                transform: translate(-15px, -15px);
+            }
+
+            80% {
+                transform: translate(15px, 15px);
+            }
+
+            100% {
+                transform: translate(0, 0);
+            }
+        }
+
+        .shake {
+            animation: screenShake 0.4s;
+            background-color: #330000 !important;
+        }
+
+        /* Dynamic Speaker Colors */
+        .color-queen {
+            color: #FFD700;
+        }
+
+        .color-minister {
+            color: #87CEFA;
+        }
+
+        .color-system {
+            color: #ff4444;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="game-container">
+        <!-- HUD -->
+        <div id="hud">
+            <div class="status-box">
+                <div class="status-title" style="color: #00FF00;">Gate Health</div>
+                <div class="bar-container">
+                    <div id="gate-health-fill"></div>
+                </div>
+            </div>
+            <div class="status-box">
+                <div class="status-title" style="color: #FFD700;">Queen's Anger</div>
+                <div class="bar-container">
+                    <div id="queen-anger-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCENE 1: Throne Room -->
+        <div id="scene-characters" class="scene active">
+            <div id="queen" class="character"></div>
+            <div id="minister" class="character"></div>
+        </div>
+
+        <!-- SCENE 2: The Gate -->
+        <div id="scene-gate" class="scene">
+            <div id="gate-structure">
+                <div id="gate-door"></div>
+            </div>
+            <div id="enemy-layer"></div>
+        </div>
+
+        <!-- Question UI -->
+        <div id="question-ui">
+            <div id="question-text">Fill in the blank:</div>
+            <button class="option-btn" id="btn-opt1" onclick="submitAnswer(0)">Option 1</button>
+            <button class="option-btn" id="btn-opt2" onclick="submitAnswer(1)">Option 2</button>
+        </div>
+
+        <!-- Dialogue UI -->
+        <div id="dialogue-container">
+            <div id="speaker-name"></div>
+            <div id="dialogue-text"></div>
+            <div id="continue-indicator">▼ Click</div>
+        </div>
+    </div>
+
+    <script>
+        // --- AUDIO ENGINE ---
+        const sndEnemies = new Audio('enemies.mp3');
+        sndEnemies.loop = true;
+        const sndGameOver = new Audio('game_over.mp3');
+        const sndWrongAnswer = new Audio('wrong_answer.mp3');
+
+        // --- GAME DATA ---
+        const gameData = {
+            gateHealth: 100,
+            queenAnger: 0,
+            currentWave: 0,
+            skipEnemySound: false
+        };
+
+        const waves = [
+            {
+                qText: "Minister, report on the watchtower! By midnight, how long will the guards have stayed awake?",
+                sentence: "By midnight, the sentinels ________ (watch) the north wall for twelve straight hours.",
+                options: ["Will have watched", "Will have been watching"],
+                correct: 1
+            },
+            {
+                qText: "If the siege lasts, what is the status of our grain reserves?",
+                sentence: "By next Friday, our army ________ (consume) all the remaining food sacks.",
+                options: ["Will have consumed", "Will have been consuming"],
+                correct: 0
+            },
+            {
+                qText: "When will the elite archers finally get here from the capital?",
+                sentence: "By the time the enemy charges the gate, the reinforcements ________ (arrive).",
+                options: ["Will have arrived", "Will have been arriving"],
+                correct: 0
+            },
+            {
+                qText: "Look at the royal moat diggers! They look exhausted. How long is their shift?",
+                sentence: "By sunrise, the workers ________ (dig) the trench for a whole day.",
+                options: ["Will have dug", "Will have been digging"],
+                correct: 1
+            },
+            {
+                qText: "Has our distress signal reached the neighboring kingdom yet?",
+                sentence: "Before the sun sets, our swiftest pigeon ________ (deliver) the message to the King.",
+                options: ["Will have delivered", "Will have been delivering"],
+                correct: 0
+            },
+            {
+                qText: "The blacksmiths are working non-stop! What will they achieve by tomorrow?",
+                sentence: "By tomorrow noon, the royal forge ________ (make) five hundred new iron swords.",
+                options: ["Will have made", "Will have been making"],
+                correct: 0
+            },
+            {
+                qText: "The court wizard is chanting a protection spell. How much energy is it taking?",
+                sentence: "By the time the enemy catapults fire, the wizard ________ (chant) his spell for three hours.",
+                options: ["Will have chanted", "Will have been chanting"],
+                correct: 1
+            },
+            {
+                qText: "Are the citizens safe inside the inner keep?",
+                sentence: "By 6:00 PM, all the villagers ________ (hide) safely behind the iron doors.",
+                options: ["Will have hidden", "Will have been hiding"],
+                correct: 0
+            },
+            {
+                qText: "The young squires are practicing with heavy shields. Tell me their progress.",
+                sentence: "By next month, these recruits ________ (train) under my command for half a year.",
+                options: ["Will have trained", "Will have been training"],
+                correct: 1
+            },
+            {
+                qText: "If we survive until tomorrow morning, what can we say about this battle?",
+                sentence: "By this time tomorrow, our perfect kingdom ________ (win) the war against the invaders!",
+                options: ["Will have won", "Will have been winning"],
+                correct: 0
+            }
+        ];
+
+        const rants = {
+            low: [
+                "Minister! Is that a misplaced past participle I see? The enemy just chipped our pristine drawbridge!",
+                "Incompetence! Your poor tense selection has allowed their battering ram to advance ten paces!",
+                "A child could tell that action required a completion aspect! Watch your step, Minister."
+            ],
+            medium: [
+                "My teeth are grinding louder than the enemy catapults! Fix your grammar before they crack the outer wall!",
+                "Are you trying to ruin my perfect kingdom? Look at the gate! It is smoking because of your continuous errors!",
+                "I am losing my patience, Minister! One more lazy answer and you will be cleaning the stables with a toothbrush!"
+            ],
+            high: [
+                "Treason! You are actively helping the enemy with this atrocious syntax! The gate is about to collapse!",
+                "Silence! Do not apologize! Just look at the disaster you have created! My flawless kingdom is in ruins!",
+                "My fury is unmatched! One more slip of the tongue and you will find yourself in the dungeon!"
+            ]
+        };
+
+        const reliefLines = [
+            "The archers fired perfectly, Your Majesty! The line is holding!",
+            "Precisely as calculated, my Queen! The boiling oil has been successfully deployed.",
+            "The shields are up, Your Grace! Perfect grammar makes for perfect armor!"
+        ];
+
+        // --- ENEMY STAMPEDE LOGIC ---
+        const enemyLayer = document.getElementById('enemy-layer');
+        function spawnEnemy() {
+            if (enemyLayer.childElementCount > 100) enemyLayer.removeChild(enemyLayer.firstElementChild);
+            const enemy = document.createElement('div');
+            enemy.classList.add('enemy');
+            const size = Math.random() * 8 + 4;
+            enemy.style.width = `${size}px`; enemy.style.height = `${size}px`;
+            const groundLevel = window.innerHeight * 0.75;
+            const verticalOffset = (Math.random() * 200) - 100;
+            enemy.style.top = `${groundLevel + verticalOffset}px`;
+            enemy.style.left = '100vw';
+            enemyLayer.appendChild(enemy);
+
+            const stopPosition = 15 + (Math.random() * 10);
+            enemy.animate([
+                { left: '100vw' },
+                { left: `${stopPosition}vw` }
+            ], { duration: Math.random() * 2000 + 1500, easing: 'ease-out', fill: 'forwards' });
+        }
+        setInterval(spawnEnemy, 100);
+
+        // --- ENGINE: DIALOGUE QUEUE ---
+        let dialogQueue = [];
+        let onQueueComplete = null;
+        let currentLineIndex = 0;
+        let isTyping = false;
+        let typingInterval;
+
+        const dialogueContainer = document.getElementById('dialogue-container');
+        const speakerNameEl = document.getElementById('speaker-name');
+        const dialogueTextEl = document.getElementById('dialogue-text');
+        const continueIndicator = document.getElementById('continue-indicator');
+
+        function switchScene(sceneId) {
+            document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+            document.getElementById(sceneId).classList.add('active');
+
+            // Audio engine triggers
+            if (sceneId === 'scene-gate') {
+                if (gameData.skipEnemySound) {
+                    sndEnemies.pause();
+                    gameData.skipEnemySound = false;
+                } else {
+                    sndEnemies.play().catch(err => console.log("Audio waiting for user gesture..."));
+                }
+            } else {
+                sndEnemies.pause();
+                sndEnemies.currentTime = 0;
+            }
+        }
+
+        function playQueue(queue, callback) {
+            dialogQueue = queue;
+            onQueueComplete = callback;
+            currentLineIndex = 0;
+            dialogueContainer.style.display = 'flex';
+            typeText(dialogQueue[currentLineIndex]);
+        }
+
+        function typeText(line) {
+            isTyping = true;
+            continueIndicator.style.display = 'none';
+            switchScene(line.sceneId);
+
+            speakerNameEl.innerText = line.speaker;
+            speakerNameEl.className = `color-${line.type}`;
+            dialogueTextEl.innerHTML = "";
+            let charIndex = 0;
+
+            typingInterval = setInterval(() => {
+                dialogueTextEl.innerHTML += line.text.charAt(charIndex);
+                charIndex++;
+                if (charIndex >= line.text.length) {
+                    clearInterval(typingInterval);
+                    isTyping = false;
+                    continueIndicator.style.display = 'block';
+                }
+            }, 30);
+        }
+
+        dialogueContainer.addEventListener('click', () => {
+            if (isTyping) {
+                clearInterval(typingInterval);
+                dialogueTextEl.innerHTML = dialogQueue[currentLineIndex].text;
+                isTyping = false;
+                continueIndicator.style.display = 'block';
+            } else {
+                currentLineIndex++;
+                if (currentLineIndex >= dialogQueue.length) {
+                    dialogueContainer.style.display = 'none';
+                    if (onQueueComplete) onQueueComplete();
+                } else {
+                    typeText(dialogQueue[currentLineIndex]);
+                }
+            }
+        });
+
+        // --- GAME LOGIC ---
+        function updateHUD() {
+            const healthFill = document.getElementById('gate-health-fill');
+            const angerFill = document.getElementById('queen-anger-fill');
+
+            healthFill.style.width = `${gameData.gateHealth}%`;
+            angerFill.style.width = `${gameData.queenAnger}%`;
+
+            if (gameData.gateHealth <= 30) healthFill.style.backgroundColor = 'red';
+            if (gameData.queenAnger >= 80) angerFill.style.backgroundColor = 'red';
+            else if (gameData.queenAnger >= 40) angerFill.style.backgroundColor = 'orange';
+        }
+
+        function triggerDamageShake() {
+            const container = document.getElementById('game-container');
+            container.classList.add('shake');
+            setTimeout(() => {
+                container.classList.remove('shake');
+            }, 400);
+        }
+
+        function startGame() {
+            const intro = [
+                { sceneId: "scene-characters", speaker: "Minister", type: "minister", text: "Your Majesty! The enemy horde is approaching the eastern wall! We must deploy the guards!" },
+                { sceneId: "scene-characters", speaker: "Queen", type: "queen", text: "Deploy them? With what instructions, Minister? Look at your reports! The grammar is a complete disaster." },
+                { sceneId: "scene-characters", speaker: "Queen", type: "queen", text: "If our defenses are not grammatically flawless, I shall let the barbarians breach the gate myself. Fix those sentences, or I will have you replaced by sunset!" }
+            ];
+            playQueue(intro, () => playWave());
+        }
+
+        function playWave() {
+            if (gameData.currentWave >= waves.length) {
+                return winGame();
+            }
+
+            const wave = waves[gameData.currentWave];
+            const waveIntro = [
+                { sceneId: "scene-characters", speaker: "Queen", type: "queen", text: wave.qText }
+            ];
+
+            playQueue(waveIntro, () => {
+                document.getElementById('question-text').innerText = wave.sentence;
+                document.getElementById('btn-opt1').innerText = wave.options[0];
+                document.getElementById('btn-opt2').innerText = wave.options[1];
+                document.getElementById('question-ui').style.display = 'flex';
+            });
+        }
+
+        function submitAnswer(selectedIndex) {
+            document.getElementById('question-ui').style.display = 'none';
+            const wave = waves[gameData.currentWave];
+            const isCorrect = (selectedIndex === wave.correct);
+
+            if (isCorrect) {
+                const relief = reliefLines[Math.floor(Math.random() * reliefLines.length)];
+                playQueue([
+                    { sceneId: "scene-gate", speaker: "System", type: "system", text: "* PERFECT GRAMMAR DEPLOYED *" },
+                    { sceneId: "scene-characters", speaker: "Minister", type: "minister", text: relief }
+                ], () => {
+                    gameData.currentWave++;
+                    playWave();
+                });
+            } else {
+                gameData.gateHealth -= 20;
+                gameData.queenAnger += 20;
+                gameData.skipEnemySound = true;
+                updateHUD();
+                triggerDamageShake();
+
+                // Play your local wrong answer file
+                sndWrongAnswer.currentTime = 0;
+                sndWrongAnswer.play().catch(err => console.log("Audio waiting for user gesture..."));
+
+                if (gameData.gateHealth <= 0) return gameOver("gate");
+                if (gameData.queenAnger >= 100) return gameOver("fired");
+
+                let rantPool = rants.low;
+                if (gameData.queenAnger >= 80) rantPool = rants.high;
+                else if (gameData.queenAnger >= 40) rantPool = rants.medium;
+                const rantText = rantPool[Math.floor(Math.random() * rantPool.length)];
+
+                playQueue([
+                    { sceneId: "scene-gate", speaker: "System", type: "system", text: "* THE GATE TAKES HEAVY DAMAGE! *" },
+                    { sceneId: "scene-characters", speaker: "Queen", type: "queen", text: rantText }
+                ], () => {
+                    gameData.currentWave++;
+                    playWave();
+                });
+            }
+        }
+
+        function gameOver(reason) {
+            sndEnemies.pause();
+            sndWrongAnswer.pause();
+            sndGameOver.play().catch(err => console.log("Audio waiting for user gesture..."));
+
+            let text = "";
+            if (reason === "gate") {
+                text = "Look what you have done! The gates are completely shattered, the enemy is inside the throne room, and worst of all... your sentences are still incorrect! Guards, throw this illiterate Minister to the wolves!";
+            } else {
+                text = "Enough! I cannot bear to listen to your butchered grammar for another second! The enemy hasn't even broken the gate, but your lack of perfection is a far greater threat to my kingdom. Pack your bags, you are banished!";
+            }
+
+            playQueue([
+                { sceneId: "scene-gate", speaker: "System", type: "system", text: "* GAME OVER *" },
+                { sceneId: "scene-characters", speaker: "Queen", type: "queen", text: text }
+            ], () => { });
+        }
+
+        function winGame() {
+            sndEnemies.pause();
+            playQueue([
+                { sceneId: "scene-characters", speaker: "Queen", type: "queen", text: "Magnificent! Absolute perfection! The enemy has retreated, the walls are pristine, and every single future timeline is flawlessly structured." },
+                { sceneId: "scene-characters", speaker: "Queen", type: "queen", text: "Step aside, Minister, you have officially earned your salary for the month." },
+                { sceneId: "scene-gate", speaker: "System", type: "system", text: "YOU WIN! PERFECT GRAMMAR ACHIEVED!" }
+            ], () => { });
+        }
+
+        window.onload = () => {
+            updateHUD();
+            startGame();
+        };
+    </script>
+</body>
+
+</html>
