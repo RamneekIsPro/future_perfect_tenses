@@ -1,23 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfectionist Queen - Tower Defense</title>
-
+    
     <style>
         /* Load the local pixel font */
         @font-face {
             font-family: 'Press Start 2P';
-            src: url('PressStart2P-Regular.ttf') format('truetype');
+            src: url('../../Fonts/Cool_Game_Font/PressStart2P-Regular.ttf') format('truetype');
         }
 
         body {
             background-color: black;
             margin: 0;
             padding: 0;
-            overflow: hidden;
+            overflow: hidden; 
             color: white;
             font-family: 'Press Start 2P', cursive, sans-serif;
             user-select: none;
@@ -84,40 +83,53 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            display: none;
+            display: none; 
         }
 
         .scene.active {
-            display: block;
+            display: block; 
         }
 
         /* --- SCENE 1: Characters --- */
         .character {
-            width: 160px;
+            width: 160px; 
             height: 160px;
             position: absolute;
             bottom: 20vh;
-            image-rendering: pixelated;
+            image-rendering: pixelated; 
             image-rendering: crisp-edges;
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center bottom;
+            z-index: 2; /* Put characters in front of the floor */
         }
 
         #queen {
-            left: 20vw;
+            left: 20vw; 
             background-image: url('queen_image.png');
         }
 
         #minister {
-            right: 20vw;
+            right: 20vw; 
             background-image: url('minister_image.png');
-            transform: scaleX(-1);
+            transform: scaleX(-1); 
         }
 
         /* --- SCENE 2: The Gates --- */
         #scene-gate {
             background: linear-gradient(to bottom, #0a0a0a, #000000);
+        }
+
+        /* UPDATED: The Floor is now a class so it can be reused in both scenes */
+        .floor {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100vw;
+            height: 15vh;
+            background-color: #111;
+            border-top: 5px solid #222;
+            z-index: 1;
         }
 
         #gate-structure {
@@ -128,13 +140,13 @@
             height: 70vh;
             background-color: #1a1a1a;
             border-right: 10px solid #333;
-            z-index: 2;
+            z-index: 2; /* Wall stands in front of the background floor layer */
         }
 
         #gate-door {
             position: absolute;
             right: 0;
-            bottom: 0;
+            bottom: 15vh; /* Sits exactly on top of the 15vh floor */
             width: 40px;
             height: 250px;
             background-color: #2b1d0f;
@@ -148,14 +160,18 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            z-index: 1;
+            z-index: 3; /* Arrows fly in front of the floor */
             overflow: hidden;
         }
 
+        /* UPDATED: Enemy arrow rotated left by 90 degrees */
         .enemy {
             position: absolute;
-            background-color: #8b0000;
-            box-shadow: 2px 2px 0 #ff4444;
+            background-image: url('arrow.png'); 
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            transform: rotate(-90deg); /* Rotates the image 90 degrees to the left */
         }
 
         /* --- UI: Dialogue Box --- */
@@ -167,14 +183,14 @@
             width: 80vw;
             max-width: 1000px;
             height: 150px;
-            background-color: rgba(0, 0, 0, 0.9);
+            background-color: rgba(0, 0, 0, 0.9); 
             border: 4px solid white;
             padding: 20px;
             box-sizing: border-box;
             cursor: pointer;
             display: flex;
             flex-direction: column;
-            z-index: 20;
+            z-index: 20; 
         }
 
         #speaker-name {
@@ -209,7 +225,7 @@
             width: 70vw;
             max-width: 800px;
             z-index: 40;
-            display: none;
+            display: none; 
             flex-direction: column;
             align-items: center;
             text-align: center;
@@ -242,64 +258,31 @@
 
         /* --- Animations --- */
         @keyframes blink {
-
-            0%,
-            49% {
-                opacity: 1;
-            }
-
-            50%,
-            100% {
-                opacity: 0;
-            }
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
         }
 
         @keyframes screenShake {
-            0% {
-                transform: translate(0, 0);
-            }
-
-            20% {
-                transform: translate(-15px, 15px);
-            }
-
-            40% {
-                transform: translate(15px, -15px);
-            }
-
-            60% {
-                transform: translate(-15px, -15px);
-            }
-
-            80% {
-                transform: translate(15px, 15px);
-            }
-
-            100% {
-                transform: translate(0, 0);
-            }
+            0% { transform: translate(0, 0); }
+            20% { transform: translate(-15px, 15px); }
+            40% { transform: translate(15px, -15px); }
+            60% { transform: translate(-15px, -15px); }
+            80% { transform: translate(15px, 15px); }
+            100% { transform: translate(0, 0); }
         }
 
         .shake {
             animation: screenShake 0.4s;
-            background-color: #330000 !important;
+            background-color: #330000 !important; 
         }
 
         /* Dynamic Speaker Colors */
-        .color-queen {
-            color: #FFD700;
-        }
+        .color-queen { color: #FFD700; } 
+        .color-minister { color: #87CEFA; } 
+        .color-system { color: #ff4444; } 
 
-        .color-minister {
-            color: #87CEFA;
-        }
-
-        .color-system {
-            color: #ff4444;
-        }
     </style>
 </head>
-
 <body>
 
     <div id="game-container">
@@ -321,12 +304,14 @@
 
         <!-- SCENE 1: Throne Room -->
         <div id="scene-characters" class="scene active">
+            <div class="floor"></div> <!-- Added floor to Throne Room -->
             <div id="queen" class="character"></div>
             <div id="minister" class="character"></div>
         </div>
 
         <!-- SCENE 2: The Gate -->
         <div id="scene-gate" class="scene">
+            <div class="floor"></div> <!-- Uses the same floor class -->
             <div id="gate-structure">
                 <div id="gate-door"></div>
             </div>
@@ -353,14 +338,14 @@
         const sndEnemies = new Audio('enemies.mp3');
         sndEnemies.loop = true;
         const sndGameOver = new Audio('game_over.mp3');
-        const sndWrongAnswer = new Audio('wrong_answer.mp3');
+        const sndWrongAnswer = new Audio('wrong_answer.mp3'); 
 
         // --- GAME DATA ---
         const gameData = {
             gateHealth: 100,
             queenAnger: 0,
             currentWave: 0,
-            skipEnemySound: false
+            skipEnemySound: false 
         };
 
         const waves = [
@@ -450,27 +435,35 @@
             "The shields are up, Your Grace! Perfect grammar makes for perfect armor!"
         ];
 
-        // --- ENEMY STAMPEDE LOGIC ---
+        // --- ENEMY ARROW LOGIC ---
         const enemyLayer = document.getElementById('enemy-layer');
         function spawnEnemy() {
-            if (enemyLayer.childElementCount > 100) enemyLayer.removeChild(enemyLayer.firstElementChild);
+            if (enemyLayer.childElementCount > 80) enemyLayer.removeChild(enemyLayer.firstElementChild);
             const enemy = document.createElement('div');
             enemy.classList.add('enemy');
-            const size = Math.random() * 8 + 4;
-            enemy.style.width = `${size}px`; enemy.style.height = `${size}px`;
-            const groundLevel = window.innerHeight * 0.75;
-            const verticalOffset = (Math.random() * 200) - 100;
-            enemy.style.top = `${groundLevel + verticalOffset}px`;
+            
+            const scale = Math.random() * 0.6 + 0.7; // Scale between 0.7 and 1.3
+            // UPDATED: Arrows are now 5x bigger (Base width 70 -> 350, Height 20 -> 100)
+            enemy.style.width = `${350 * scale}px`; 
+            enemy.style.height = `${100 * scale}px`;
+            
+            // Randomize flight path heights above the floor
+            const maxHeight = window.innerHeight * 0.1; 
+            const minHeight = window.innerHeight * 0.8; // Right above the 15vh floor
+            const randomHeight = Math.random() * (minHeight - maxHeight) + maxHeight;
+            
+            enemy.style.top = `${randomHeight}px`;
             enemy.style.left = '100vw';
             enemyLayer.appendChild(enemy);
 
-            const stopPosition = 15 + (Math.random() * 10);
+            const stopPosition = 12 + (Math.random() * 5); // Stop where the gate is
             enemy.animate([
                 { left: '100vw' },
                 { left: `${stopPosition}vw` }
-            ], { duration: Math.random() * 2000 + 1500, easing: 'ease-out', fill: 'forwards' });
+            ], { duration: Math.random() * 1500 + 1000, easing: 'ease-out', fill: 'forwards' });
         }
-        setInterval(spawnEnemy, 100);
+        // Spawn arrows a bit faster since they are projectiles
+        setInterval(spawnEnemy, 80);
 
         // --- ENGINE: DIALOGUE QUEUE ---
         let dialogQueue = [];
@@ -487,18 +480,18 @@
         function switchScene(sceneId) {
             document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
             document.getElementById(sceneId).classList.add('active');
-
+            
             // Audio engine triggers
             if (sceneId === 'scene-gate') {
                 if (gameData.skipEnemySound) {
                     sndEnemies.pause();
-                    gameData.skipEnemySound = false;
+                    gameData.skipEnemySound = false; 
                 } else {
                     sndEnemies.play().catch(err => console.log("Audio waiting for user gesture..."));
                 }
             } else {
                 sndEnemies.pause();
-                sndEnemies.currentTime = 0;
+                sndEnemies.currentTime = 0; 
             }
         }
 
@@ -512,9 +505,9 @@
 
         function typeText(line) {
             isTyping = true;
-            continueIndicator.style.display = 'none';
+            continueIndicator.style.display = 'none'; 
             switchScene(line.sceneId);
-
+            
             speakerNameEl.innerText = line.speaker;
             speakerNameEl.className = `color-${line.type}`;
             dialogueTextEl.innerHTML = "";
@@ -526,9 +519,9 @@
                 if (charIndex >= line.text.length) {
                     clearInterval(typingInterval);
                     isTyping = false;
-                    continueIndicator.style.display = 'block';
+                    continueIndicator.style.display = 'block'; 
                 }
-            }, 30);
+            }, 30); 
         }
 
         dialogueContainer.addEventListener('click', () => {
@@ -540,7 +533,7 @@
             } else {
                 currentLineIndex++;
                 if (currentLineIndex >= dialogQueue.length) {
-                    dialogueContainer.style.display = 'none';
+                    dialogueContainer.style.display = 'none'; 
                     if (onQueueComplete) onQueueComplete();
                 } else {
                     typeText(dialogQueue[currentLineIndex]);
@@ -552,7 +545,7 @@
         function updateHUD() {
             const healthFill = document.getElementById('gate-health-fill');
             const angerFill = document.getElementById('queen-anger-fill');
-
+            
             healthFill.style.width = `${gameData.gateHealth}%`;
             angerFill.style.width = `${gameData.queenAnger}%`;
 
@@ -613,11 +606,10 @@
             } else {
                 gameData.gateHealth -= 20;
                 gameData.queenAnger += 20;
-                gameData.skipEnemySound = true;
+                gameData.skipEnemySound = true; 
                 updateHUD();
                 triggerDamageShake();
 
-                // Play your local wrong answer file
                 sndWrongAnswer.currentTime = 0;
                 sndWrongAnswer.play().catch(err => console.log("Audio waiting for user gesture..."));
 
@@ -633,7 +625,7 @@
                     { sceneId: "scene-gate", speaker: "System", type: "system", text: "* THE GATE TAKES HEAVY DAMAGE! *" },
                     { sceneId: "scene-characters", speaker: "Queen", type: "queen", text: rantText }
                 ], () => {
-                    gameData.currentWave++;
+                    gameData.currentWave++; 
                     playWave();
                 });
             }
@@ -654,7 +646,7 @@
             playQueue([
                 { sceneId: "scene-gate", speaker: "System", type: "system", text: "* GAME OVER *" },
                 { sceneId: "scene-characters", speaker: "Queen", type: "queen", text: text }
-            ], () => { });
+            ], () => {});
         }
 
         function winGame() {
@@ -663,7 +655,7 @@
                 { sceneId: "scene-characters", speaker: "Queen", type: "queen", text: "Magnificent! Absolute perfection! The enemy has retreated, the walls are pristine, and every single future timeline is flawlessly structured." },
                 { sceneId: "scene-characters", speaker: "Queen", type: "queen", text: "Step aside, Minister, you have officially earned your salary for the month." },
                 { sceneId: "scene-gate", speaker: "System", type: "system", text: "YOU WIN! PERFECT GRAMMAR ACHIEVED!" }
-            ], () => { });
+            ], () => {});
         }
 
         window.onload = () => {
@@ -672,5 +664,4 @@
         };
     </script>
 </body>
-
 </html>
